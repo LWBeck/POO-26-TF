@@ -1,5 +1,3 @@
-O diagrama está incompleto!!!
-
 @startuml classes.puml
 
 class Sistema{

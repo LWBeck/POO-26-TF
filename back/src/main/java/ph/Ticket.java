@@ -1,16 +1,17 @@
+package ph;
+
+import interfaces.Cliente;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 
 public class Ticket{
-    private final String placa;
     private final Cliente cliente;
     private final LocalDateTime hEntrada;
     private LocalDateTime hSaida;
     private double valor;
 
-    public Ticket(String placa, Cliente cliente, LocalDateTime hEntrada){
-        this.placa = placa;
+    public Ticket(Cliente cliente, LocalDateTime hEntrada){
         this.cliente = cliente;
         this.hEntrada = hEntrada;
     }

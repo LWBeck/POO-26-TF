@@ -1,0 +1,18 @@
+três empreendimentos distintos: um shopping center, um edifício corporativo e uma universidade
+capacidade total de 9.000 vagas numeradas 
+
+Sistema:
+•	gerenciamento do cadastro de clientes pré-cadastrados;
+•	controle de entrada e saída de veículos;
+•	cálculo e registro de cobranças;
+•	consulta e geração de relatórios gerenciais
+
+Clientes avulsos:
+-identificados pela placa
+-valor fixo por hora até 6h, depois disso é cobrado tarifa diária
+-se a permanência ultrapassar a meia-noite, uma nova diária é cobrada
+-Caso o cliente avulso se recuse a pagar, a saída do veículo será permitida, 
+    porém o ocorrido será registrado em uma lista de bloqueio
+
+Professores
+-identificado pelo CPF
