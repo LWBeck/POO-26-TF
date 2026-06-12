@@ -1,0 +1,62 @@
+@startuml classes.puml
+
+class Sistema{
+    - registros: Set<Ticket>
+}
+
+abstract class Cliente{
+    - placa: Object
+    - valorFixo: double
+    + {abstract} getId(): String
+    + {abstract} calculaValor(Ticket): double
+}
+together{
+    class ClienteAvulso{
+        - placa: String
+        - valorHora: double
+    }
+
+    class ClienteProfessor{
+        - cpf: String
+        - placa: String[2]
+        - veiculoEstacionado: boolean
+    }
+
+    class ClienteAluno{
+        - placa: String
+        - saldo: double
+    }
+
+    class ClienteEmpresa{
+        - placa: Set<String>
+    }
+}
+
+class Ticket{
+    -cliente: Cliente
+    -hEntrada: Date
+    -hSaida: Date
+}
+
+interface Bloqueio{
+    + estaBloqueado(): boolean
+}
+
+class ValidaID <<utility>>{
+    + {static} validaPlaca(String): boolean
+    + {static} validaCPF(String): boolean
+    + {static} validaCNPJ(String): boolean
+}
+
+Cliente <|-down- ClienteAvulso
+Cliente <|-down- ClienteProfessor
+Cliente <|-down- ClienteAluno
+Cliente <|-down- ClienteEmpresa
+
+ClienteAvulso ..|> Bloqueio
+ClienteAluno ..|> Bloqueio
+ClienteEmpresa ..|> Bloqueio
+
+Cliente *-right- Ticket 
+Cliente .left.> ValidaID
+@enduml
