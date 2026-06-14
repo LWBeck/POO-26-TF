@@ -1,11 +1,10 @@
 package interfaces;
 
-import ph.Ticket;
+import sistema.Ticket;
 
-public abstract class Cliente {
-    public abstract String getId(); // id nesse caso pode ser placa, cpf ou cnpj
-    public boolean equals(Cliente outroCliente){
-        return this.getId().equals(outroCliente.getId());
-    }
-    public abstract double calculaValor(Ticket ticket);
+public interface Cliente {
+    public String getId(); // id nesse caso pode ser placa, cpf ou cnpj
+    public Double calculaValor(Ticket ticket);
+    public boolean equals(Cliente outroCliente);
+    public boolean equals(String outroId);
 }
