@@ -3,6 +3,7 @@ package interfaces;
 import java.util.HashSet;
 import java.util.List;
 
+import customExceptions.LimiteVeiculosAtingidoException;
 import customExceptions.PlacaNaoEncontradaException;
 import sistema.Placa;
 
@@ -23,9 +24,7 @@ public abstract class PreRegistrado implements Cliente{
     public List<Placa> getPlacas(){ return veiculos.stream().toList(); }
 
     public boolean registrarVeiculo(String placa){
-        if (veiculos.size() >= nMaxVeiculos){
-            return false;
-        }
+        if (veiculos.size() >= nMaxVeiculos) throw new LimiteVeiculosAtingidoException(this.getId());
         return this.veiculos.add(new Placa(placa));
     }
 

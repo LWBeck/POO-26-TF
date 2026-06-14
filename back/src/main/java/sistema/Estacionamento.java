@@ -11,11 +11,21 @@ import interfaces.PreRegistrado;
 
 import tiposClientes.ClienteAluno;
 import tiposClientes.ClienteAvulso;
+import tiposClientes.ClienteEmpresa;
 import tiposClientes.ClienteProfessor;
 
+import utilities.ValidaDados;
+
 import customExceptions.ClienteBloqueadoException;
+import customExceptions.ClienteNaoEncontradoException;
+import customExceptions.PlacaInvalidaException;
+import customExceptions.PlacaJaRegistradaException;
 import customExceptions.PlacaNaoEncontradaException;
 import customExceptions.VeiculoJaEstacionadoException;
+
+enum TipoCliente {
+    AVULSO, ALUNO, PROFESSOR, EMPRESA
+}
 
 public class Estacionamento {
     private final int id;
@@ -38,55 +48,91 @@ public class Estacionamento {
     public int getId(){ return id; }
     public String getNome() { return nome; }
 
-    public boolean estaEstacionado(String placa){
-        return veiculosEstacionados.keySet().stream()
-            .anyMatch(v -> v.equals(placa));
+    //----------------------------- METODOS DE CLIENTES -----------------------------    
+
+    public boolean registrarCliente(TipoCliente tipo, String idCliente, String nome){
+        switch (tipo) {
+            case PROFESSOR:
+                if (!ValidaDados.validaCPF(idCliente)) throw new IllegalArgumentException();
+                return clientesPreRegistrados.add(new ClienteProfessor(idCliente, nome));
+            case ALUNO:
+                if (!ValidaDados.validaCPF(idCliente)) throw new IllegalArgumentException();
+                return clientesPreRegistrados.add(new ClienteAluno(idCliente, nome));
+            case EMPRESA:
+                return clientesPreRegistrados.add(new ClienteEmpresa(idCliente, nome));
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 
-    public List<String> procuraRegistros(String idCliente){
-        return registros.stream()
-            .map(Ticket::getIdCliente)
-            .filter(id -> id.equals(idCliente))
-            .toList();
+    // vincula uma placa a um cliente pre registrado
+    public boolean registrarPlacaCliente(String idCliente, String placa){
+        if(placaJaExiste(placa)) throw new PlacaJaRegistradaException(placa);
+        PreRegistrado cliente = procuraClienteId(idCliente);
+        if(cliente == null) throw new ClienteNaoEncontradoException(idCliente);
+        if(!ValidaDados.validaPlaca(placa)) throw new PlacaInvalidaException(placa);
+
+        return cliente.registrarVeiculo(placa);
     }
 
-    public boolean estaBloqueado(String idCliente){
-        return clientesBloqueados.stream()
-            .anyMatch(c -> c.equals(idCliente));
+    // remove uma placa de um cliente pre registrado
+    public boolean removerPlacaCliente(String idCliente, String placa){
+        PreRegistrado cliente = procuraClienteId(idCliente);
+        if(cliente == null) throw new ClienteNaoEncontradoException(idCliente);
+        if(!ValidaDados.validaPlaca(placa)) throw new PlacaInvalidaException(placa);
+
+        return cliente.removeVeiculo(placa);
     }
+
+    //----------------------------- METODOS DE ENTRADA E SAIDA DE VEICULOS -----------------------------    
 
     public boolean estacionaVeiculo(String placa, String hEntrada){
+        // verifica se o veiculo ja esta estacionado
         if (estaEstacionado(placa)) throw new VeiculoJaEstacionadoException(placa);
+
         PreRegistrado cliente = procuraClientesPreRegistrados(placa);
 
         if (cliente == null){ // significa que ou o cliente nao eh pre registrado
-            if (estaBloqueado(placa)) throw new ClienteBloqueadoException(); // se nao for pre registrado o id eh a propria placa
+            // se nao for pre registrado o id eh a propria placa e por isso pode ser usado para verificar o bloqueio
+            if (estaBloqueado(placa)) throw new ClienteBloqueadoException();
+            if (placaJaExiste(placa)) throw new PlacaJaRegistradaException(placa);
+            
             ClienteAvulso clienteAvulso = new ClienteAvulso(placa);
+            // emite um ticket
             registros.add(new Ticket(clienteAvulso, LocalDateTime.parse(hEntrada, formatadorData)));
+            // adiciona o veiculo ao set de estacionados
             veiculosEstacionados.put(new Placa(placa), clienteAvulso);
             return true;
         }
 
+        // verifica se o cliente esta bloqueado
         if (estaBloqueado(cliente.getId())) throw new ClienteBloqueadoException();
 
+        // verifica se a placa esta vinculada ao cliente
         Placa veiculo = procuraPlaca(cliente, placa);
         if (veiculo == null) throw new PlacaNaoEncontradaException(placa);
 
         if (cliente instanceof ClienteProfessor && temVeiculoEstacionado(cliente)){
-            // se o professor ja tiver um outro veiculo estacionado
+            // se for professor e ja tiver um outro veiculo estacionado
             ClienteAvulso clienteAvulso = new ClienteAvulso(placa);
+            // emite um ticket
             registros.add(new Ticket(clienteAvulso, LocalDateTime.parse(hEntrada, formatadorData)));
+            // adiciona o veiculo ao set de estacionados
             veiculosEstacionados.put(new Placa(placa), clienteAvulso);
             return true;
         }
+        // todos os outros casos
+
+        // emite um ticket
         registros.add(new Ticket(cliente, LocalDateTime.parse(hEntrada, formatadorData)));
+        // adiciona o veiculo ao set de estacionados
         veiculosEstacionados.put(veiculo,cliente);
         return true;
     }
 
     public boolean retiraVeiculo(String placa, String hSaida){
         if (!estaEstacionado(placa)) throw new PlacaNaoEncontradaException(placa);
-        Cliente cliente = procuraCliente(placa);
+        Cliente cliente = procuraClientePlaca(placa);
         Ticket ticket = procuraTicketAberto(cliente);
         ticket.setHSaida(LocalDateTime.parse(hSaida, formatadorData));
         if (cliente instanceof ClienteAluno){
@@ -102,8 +148,31 @@ public class Estacionamento {
         return false;
     }
 
+    //----------------------------- METODOS DE VERIFICACAO DE ESTADO -----------------------------    
+
+    // verificacao de se um veiculo esta estacionado a partir da placa (string)
+    public boolean estaEstacionado(String placa){
+        return veiculosEstacionados.keySet().stream()
+            .anyMatch(v -> v.equals(placa));
+    }
+
+    // verifica se um cliente esta bloqueado
+    public boolean estaBloqueado(String idCliente){
+        return clientesBloqueados.stream()
+            .anyMatch(c -> c.equals(idCliente));
+    }
+
+    // verifica se uma placa ja esta registrada
+    public boolean placaJaExiste(String placa){
+        return clientesPreRegistrados.stream()
+            .map(PreRegistrado::getPlacas)
+            .flatMap(List::stream)
+            .anyMatch(p -> p.equals(placa));
+    }
+
     //----------------------------- METODOS DE BUSCA COM RETORNO OU USO DE REFERENCIA -----------------------------
 
+    // retorna uma referencia a um cliente pre registrado a partir de uma placa (string)
     private PreRegistrado procuraClientesPreRegistrados(String placa){
         return clientesPreRegistrados.stream()
                                      .filter(c -> c.getPlacas().stream()
@@ -112,7 +181,16 @@ public class Estacionamento {
                                      .orElse(null);
     }
 
-    private Cliente procuraCliente(String placa){
+    // retorna uma referencia a um cliente pre registrado a partir de um id
+    private PreRegistrado procuraClienteId(String idCliente){
+        return clientesPreRegistrados.stream()
+            .filter(c -> c.equals(idCliente))
+            .findFirst()
+            .orElse(null);
+    }
+
+    // retorna uma referencia a um cliente pre registrado a partir de uma placa
+    private Cliente procuraClientePlaca(String placa){
         return veiculosEstacionados.entrySet().stream()
             .filter(e -> e.getKey().equals(placa))
             .map(e -> e.getValue())
@@ -120,6 +198,7 @@ public class Estacionamento {
             .orElse(null);
     }
 
+    // retorna uma referencia a um ticket aberto (sem valor e horario de saida) a partir de uma referencia a um cliente
     private Ticket procuraTicketAberto(Cliente cliente){
         return registros.stream()
             .filter(t -> t.getIdCliente().equals(cliente.toString()))
@@ -128,12 +207,21 @@ public class Estacionamento {
             .orElse(null);
     }
 
+    // procura uma placa entre as placas registradas de um cliente e retorna uma referencia
     private Placa procuraPlaca(PreRegistrado cliente, String placa){
         return cliente.getPlacas().stream().filter(p -> p.equals(placa)).findFirst().orElse(null);
     }
 
+    // verifica se um cliente pre registrado ja tem um veiculo estacionado a partir de uma referencia
     private boolean temVeiculoEstacionado(PreRegistrado cliente){
         return cliente.getPlacas().stream().anyMatch(p -> estaEstacionado(p.toString()));
+    }
+
+    // procura tickets a partir de um id de cliente
+    public List<Ticket> procuraRegistros(String idCliente){
+        return registros.stream()
+            .filter(t -> t.getIdCliente().equals(idCliente))
+            .toList();
     }
 
 }
