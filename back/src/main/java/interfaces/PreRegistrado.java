@@ -17,7 +17,7 @@ public abstract class PreRegistrado implements Cliente{
         this.nMaxVeiculos = nMaxVeiculos;
         this.veiculos = new HashSet<>();
     }
-
+    @Override
     public abstract String getId();
     public String getNome(){ return nome; }
 
@@ -39,12 +39,12 @@ public abstract class PreRegistrado implements Cliente{
         this.veiculos.remove(veiculo);
         return true;
     }
-
+    @Override
     public boolean equals(Cliente cliente){
         return this.getId().equals(cliente.getId());
     }
-
-    public boolean equals (String outroId){
+    @Override
+    public boolean equals(String outroId){
         return this.getId().equals(outroId);
     }
 }

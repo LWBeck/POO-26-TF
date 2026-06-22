@@ -1,7 +1,6 @@
 package tiposClientes;
 
 import interfaces.Cliente;
-
 import sistema.Ticket;
 
 public class ClienteAvulso implements Cliente{
@@ -12,7 +11,7 @@ public class ClienteAvulso implements Cliente{
     public ClienteAvulso(String placa){
         this.placa = placa;
     }
-
+    @Override
     public String getId(){ return placa; }
 
     public String getPlaca(){ return placa; }
@@ -24,11 +23,11 @@ public class ClienteAvulso implements Cliente{
         }
         return valorHora*(ticket.diffHoras()+1);
     }
-
+    @Override
     public boolean equals(Cliente cliente){
         return this.getId().equals(cliente.getId());
     }
-
+    @Override
     public boolean equals (String outroId){
         return this.getId().equals(outroId);
     }

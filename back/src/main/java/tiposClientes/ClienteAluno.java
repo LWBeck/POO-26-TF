@@ -1,11 +1,7 @@
 package tiposClientes;
 
-
 import interfaces.PreRegistrado;
-
 import sistema.Ticket;
-
-import customExceptions.SaldoInsuficienteException;
 
 public class ClienteAluno extends PreRegistrado{
     private final String cpf;
@@ -25,11 +21,13 @@ public class ClienteAluno extends PreRegistrado{
     public Double getSaldo(){ return saldo; }
 
     // duvida: tem problema em deixar essa funcao como publica? como eu faria para ela nao precisar ser publica?
-    public void modSaldo(double mod){
-        saldo += mod;
-        if ((saldo) < 0){
-            throw new SaldoInsuficienteException();
-        }
+    public boolean  pagar(double valor){
+        saldo -= valor;
+        return (saldo < 0);
+    }
+
+    public void adicionarSaldo(double valor){
+        saldo += valor;
     }
 
     @Override

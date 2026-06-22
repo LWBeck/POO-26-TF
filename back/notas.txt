@@ -20,7 +20,5 @@ Professores
 -identificado pelo CPF
 
 
-verificacao de placas duplicadas eh feita pelo sistema nao nas classes cliente
-
-duvida na linha 95 do /sistema/Estacionamento.java
-duvida na linha 27 de /tiposClientes/ClienteAluno.java
+PARA FAZER
+-Separar metodos de aumento e redução de saldo do ClienteAluno

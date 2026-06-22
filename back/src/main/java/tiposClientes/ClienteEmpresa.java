@@ -1,7 +1,6 @@
 package tiposClientes;
 
 import interfaces.PreRegistrado;
-
 import sistema.Ticket;
 
 public class ClienteEmpresa extends PreRegistrado{
@@ -18,6 +17,7 @@ public class ClienteEmpresa extends PreRegistrado{
     }
 
     public boolean estaEmDebito(){ return emDebito; }
+    public void setDebito(boolean debito){emDebito = debito;}
     
     @Override
     public String getId(){ return cnpj; }
