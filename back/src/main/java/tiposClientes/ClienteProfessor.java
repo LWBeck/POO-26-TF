@@ -1,11 +1,11 @@
 package tiposClientes;
 
-import interfaces.PreRegistrado;
+import interfaces.Cliente;
 
 import sistema.Ticket;
 
 
-public class ClienteProfessor extends PreRegistrado{
+public class ClienteProfessor extends Cliente{
     private final String cpf;
 
     public ClienteProfessor(String cpf, String nome){

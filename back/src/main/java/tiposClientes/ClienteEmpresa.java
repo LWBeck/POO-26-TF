@@ -1,9 +1,9 @@
 package tiposClientes;
 
-import interfaces.PreRegistrado;
+import interfaces.Cliente;
 import sistema.Ticket;
 
-public class ClienteEmpresa extends PreRegistrado{
+public class ClienteEmpresa extends Cliente{
     private final String cnpj;
     private final Double valorDiaria = 30.0;
     private final Double valorMulta = 50.0;

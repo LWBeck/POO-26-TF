@@ -10,10 +10,7 @@ import customExceptions.ClienteBloqueadoException;
 import customExceptions.PlacaNaoEncontradaException;
 import customExceptions.VeiculoJaEstacionadoException;
 import interfaces.Cliente;
-import interfaces.PreRegistrado;
 import tiposClientes.ClienteAluno;
-import tiposClientes.ClienteAvulso;
-import tiposClientes.ClienteEmpresa;
 import tiposClientes.ClienteProfessor;
 enum TipoCliente {
     AVULSO, ALUNO, PROFESSOR, EMPRESA
@@ -45,38 +42,34 @@ public class Estacionamento {
     //----------------------------- METODOS DE ENTRADA E SAIDA DE VEICULOS -----------------------------    
 
     public boolean estacionaVeiculo(String placa, String hEntrada){
-        // verifica se o veiculo ja esta estacionado
         if (estaBloqueado(placa)) throw new ClienteBloqueadoException();
+        // verifica se o veiculo ja esta estacionado
         if (estaEstacionado(placa)) throw new VeiculoJaEstacionadoException(placa);
 
-        PreRegistrado cliente = sys.procuraClientesPorPlaca(placa);
+        Cliente cliente = sys.procuraClientesPorPlaca(placa);
 
         if (cliente == null){ // significa que ou o cliente nao eh pre registrado
-            ClienteAvulso clienteAvulso = new ClienteAvulso(placa);
             // emite um ticket
-            ticketsAbertos.put(placa, new Ticket(clienteAvulso, LocalDateTime.parse(hEntrada, formatadorData)));
-            // adiciona o veiculo ao set de estacionados
-            veiculosEstacionados.put(placa, clienteAvulso);
+            ticketsAbertos.put(placa, new Ticket(null, placa, LocalDateTime.parse(hEntrada, formatadorData)));
+            // adiciona o veiculo aos estacionados
+            veiculosEstacionados.put(placa, null);
             return true;
         }
 
         if (cliente instanceof ClienteProfessor && temVeiculoEstacionado(cliente)){
             // se for professor e ja tiver um outro veiculo estacionado
-            ClienteAvulso clienteAvulso = new ClienteAvulso(placa);
+
             // emite um ticket
-            ticketsAbertos.put(placa, new Ticket(clienteAvulso, LocalDateTime.parse(hEntrada, formatadorData)));
-            // adiciona o veiculo ao set de estacionados
-            veiculosEstacionados.put(placa, clienteAvulso);
+            ticketsAbertos.put(placa, new Ticket(null, placa, LocalDateTime.parse(hEntrada, formatadorData)));
+            // adiciona o veiculo aos estacionados
+            veiculosEstacionados.put(placa, null);
             return true;
-        }
-        else if(cliente instanceof ClienteEmpresa clienteEmpresa){
-            clienteEmpresa.setDebito(true);
         }
         // todos os outros casos
 
         // emite um ticket
-        ticketsAbertos.put(placa, new Ticket(cliente, LocalDateTime.parse(hEntrada, formatadorData)));
-        // adiciona o veiculo ao set de estacionados
+        ticketsAbertos.put(placa, new Ticket(cliente, placa, LocalDateTime.parse(hEntrada, formatadorData)));
+        // adiciona o veiculo aos estacionados
         veiculosEstacionados.put(placa,cliente);
         return true;
     }
@@ -91,27 +84,19 @@ public class Estacionamento {
                 bloqueados.add(placa);
             }
         }
-        else if (cliente instanceof ClienteEmpresa clienteEmpresa){
-            if(!pagou){
-                bloqueados.add(placa);
-            }
-            else{
-                clienteEmpresa.setDebito(false);
-            }
-        }
-        if (!pagou && cliente instanceof ClienteAvulso){
+        if (!pagou && cliente == null){ // significa que é cliente avulso
             bloqueados.add(placa);
         }
     }
 
     //----------------------------- METODOS DE VERIFICACAO DE ESTADO -----------------------------    
 
-    // verificacao de se um veiculo esta estacionado a partir da placa (string)
+    // verificacao de se um veiculo esta estacionado a partir da placa
     public boolean estaEstacionado(String placa){
         return veiculosEstacionados.containsKey(placa);
     }
 
-    // verifica se um cliente esta bloqueado
+    // verifica se uma placa esta bloqueada
     public boolean estaBloqueado(String placa){
         return bloqueados.contains(placa);
     }
@@ -127,20 +112,27 @@ public class Estacionamento {
             .orElse(null);
     }
 
-    // retorna uma referencia a um ticket aberto (sem valor e horario de saida) a partir de uma referencia a um cliente
+    // retorna uma referencia a um ticket aberto (sem valor e horario de saida) a partir de uma placa
     private Ticket procuraTicketAberto(String placa){
         return ticketsAbertos.get(placa);
     }
 
     // verifica se um cliente pre registrado ja tem um veiculo estacionado a partir de uma referencia
-    private boolean temVeiculoEstacionado(PreRegistrado cliente){
-        return cliente.getPlacas().stream().anyMatch(p -> estaEstacionado(p.toString()));
+    private boolean temVeiculoEstacionado(Cliente cliente){
+        return cliente.getPlacas().stream().anyMatch(p -> estaEstacionado(p));
     }
 
     // procura tickets a partir de um id de cliente
-    public List<Ticket> procuraRegistros(String idCliente){
+    public List<Ticket> procuraRegistrosPorCliente(String idCliente){
         return registros.stream()
             .filter(t -> t.getIdCliente().equals(idCliente))
+            .toList();
+    }
+
+    // procura tickets a partir de uma placa
+    public List<Ticket> procuraRegistrosPorPlaca(String placa){
+        return registros.stream()
+            .filter(t -> t.getPlaca().equals(placa))
             .toList();
     }
 

@@ -46,6 +46,53 @@ public class ValidaDados {
         return (Character.getNumericValue(cpf.charAt(10)) == 11 - n2);
     }
 
+    public static boolean validaCNPJ(String cnpj){
+        if (cnpj.length() != 14){ 
+            //System.out.println("falhou no lenght");
+            return false; 
+        }
+        if(!(cnpj.chars()
+                 .mapToObj(c -> (char) c)
+                 .allMatch(c -> Character.isDigit(c))))
+        {
+            //System.out.println("falhou no isDigit");
+            return false;
+        }
+        int soma1 = 0;
+        for (int i = 11; i >= 0; i--){
+            soma1 += Character.getNumericValue(cnpj.charAt(11 - i))*(2 + i%8);
+            //System.out.println("cnpj.charAt(i): "+Character.getNumericValue(cnpj.charAt(i)));
+            //System.out.println("2 + i%8: "+(2 + i%8));
+            //System.out.println("soma1: "+soma1);
+        }
+        int n1 = soma1%11;
+        //System.out.println("n1 = "+n1);
+        //System.out.println("11 - n1 = "+ (11 - n1));
+        //System.out.println("charAt(12) = "+Character.getNumericValue(cnpj.charAt(12)));
+        if (n1 < 2){
+            if (Character.getNumericValue(cnpj.charAt(12)) != 0){ 
+                //System.out.println("falhou no primeiro digito n1 < 2");
+                return false;}
+        }
+        else if(!(Character.getNumericValue(cnpj.charAt(12)) == (11 - n1))){ 
+            //System.out.println("falhou no primeiro digito n1 > 2");
+            return false;
+        }
+        int soma2 = 0;
+        for (int i = 12; i >= 0; i--){
+            soma2 += Character.getNumericValue(cnpj.charAt(12 - i))*(2 + i%8);
+            //System.out.println("soma2: "+soma2);
+        }
+        int n2 = soma2%11;
+        //System.out.println("n2 = "+n2);
+        if (n2 < 2){
+            //System.out.println("chegou no ultimo check n2 < 2");
+            return (Character.getNumericValue(cnpj.charAt(13)) != 0);
+        }
+        //System.out.println("chegou no ultimo check n2 > 1");
+        return (Character.getNumericValue(cnpj.charAt(13)) == 11 - n2);
+    }
+
     public static boolean validaPlaca(String placa){
         if (placa.length() != 7){ return false; }
         if (!(placa.substring(0,3).chars()
