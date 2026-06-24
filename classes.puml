@@ -5,25 +5,25 @@ class Sistema{
 }
 
 abstract class Cliente{
-    - placa: Object
-    - valorFixo: double
+    - nome: String
+    - nMaxVeiculos: int
+    - veiculos: HashSet<String>
     + {abstract} getId(): String
     + {abstract} calculaValor(Ticket): double
+    + registarVeiculo(String): boolean
+    + removerVeiculo(String): boolean
 }
 together{
-    class ClienteAvulso{
-        - placa: String
-        - valorHora: double
-    }
 
     class ClienteProfessor{
         - cpf: String
-        - placa: String[2]
-        - veiculoEstacionado: boolean
+        - nMaxVeiculos = 2
     }
 
     class ClienteAluno{
-        - placa: String
+        - cpf: String
+        - nMaxVeiculos = 1
+        - valorFixo: double
         - saldo: double
     }
 
@@ -33,31 +33,40 @@ together{
 }
 
 class Ticket{
-    -cliente: Cliente
-    -hEntrada: Date
-    -hSaida: Date
+    - cliente: Cliente
+    - placa: String
+    - hEntrada: Date
+    - hSaida: Date
+    - valorTotalDevido: double
+    - valorPago: double
+    - nomeDesconto: String
+    - percentagemDesconto: double
+    - valorDesconto: double
+
+    + configurarDesconto(String, double): void
+    + diffHoras(): long
+    + diffDias(): long
+    + calculaValor(): double
 }
 
 interface Bloqueio{
     + estaBloqueado(): boolean
 }
 
-class ValidaID <<utility>>{
+class ValidaDados <<utility>>{
     + {static} validaPlaca(String): boolean
     + {static} validaCPF(String): boolean
     + {static} validaCNPJ(String): boolean
 }
 
-Cliente <|-down- ClienteAvulso
 Cliente <|-down- ClienteProfessor
 Cliente <|-down- ClienteAluno
 Cliente <|-down- ClienteEmpresa
 
-ClienteAvulso ..|> Bloqueio
 ClienteAluno ..|> Bloqueio
 ClienteEmpresa ..|> Bloqueio
 
 Cliente *-right- Ticket 
-Cliente .left.> ValidaID
+Cliente .left.> ValidaDados
 
 @enduml

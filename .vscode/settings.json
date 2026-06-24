@@ -2,6 +2,7 @@
     "java.debug.settings.hotCodeReplace": "auto",
     "java.project.sourcePaths": [
         "back"
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
     
 }

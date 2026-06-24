@@ -12,6 +12,7 @@ import customExceptions.VeiculoJaEstacionadoException;
 import interfaces.Cliente;
 import tiposClientes.ClienteAluno;
 import tiposClientes.ClienteProfessor;
+
 enum TipoCliente {
     AVULSO, ALUNO, PROFESSOR, EMPRESA
 }
@@ -21,7 +22,7 @@ public class Estacionamento {
     private final Sistema sys;
     private final String nome;
     private final HashMap<String, Cliente> veiculosEstacionados;
-    private final HashSet<String> bloqueados;
+    private final HashSet<String> placasBloqueadas;
     private final HashMap<String, Ticket> ticketsAbertos;
     private final HashSet<Ticket> registros;
     private final DateTimeFormatter formatadorData = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
@@ -31,7 +32,7 @@ public class Estacionamento {
         this.sys = new Sistema(id);
         this.nome = nome;
         this.veiculosEstacionados = new HashMap<>();
-        this.bloqueados = new HashSet<>();
+        this.placasBloqueadas = new HashSet<>();
         this.ticketsAbertos = new HashMap<>();
         this.registros = new HashSet<>();
     }
@@ -74,19 +75,53 @@ public class Estacionamento {
         return true;
     }
 
-    public void retiraVeiculo(String placa, String hSaida, boolean pagou){
+    public boolean retiraVeiculo(String placa, String hSaida, boolean pagou){
         if (!estaEstacionado(placa)) throw new PlacaNaoEncontradaException(placa);
+        
         Cliente cliente = procuraClientePlaca(placa);
         Ticket ticket = procuraTicketAberto(placa);
-        ticket.setHSaida(LocalDateTime.parse(hSaida, formatadorData));
+        LocalDateTime dataHoraSaida = LocalDateTime.parse(hSaida, formatadorData);
+        
+        // --- LÓGICA DO CLIENTE FREQUENTE ---
+        if (cliente == null) {
+            boolean temDesconto = verificarClienteFrequente(placa, dataHoraSaida);
+            if (temDesconto) {
+                // Passamos o nome do desconto e a porcentagem (10% = 0.10)
+                ticket.configurarDesconto("Cliente Frequente", 0.10); 
+            } else {
+                ticket.configurarDesconto("nenhum", 0.0);
+            }
+        } else {
+            // Clientes cadastrados não recebem esse desconto
+            ticket.configurarDesconto("nenhum", 0.0); 
+        }
+
+        // Ao setar a saída, o ticket deve calcular o custo, abater o desconto e guardar os valores finais
+        ticket.setHSaida(dataHoraSaida);
+        
+        // --- COBRANÇA DO ALUNO ---
         if (cliente instanceof ClienteAluno clienteAluno){
-            if(!clienteAluno.pagar(ticket.getValor())){
-                bloqueados.add(placa);
+            boolean saldoFicouNegativo = clienteAluno.pagar(ticket.getValor());
+            
+            if (saldoFicouNegativo) {
+                placasBloqueadas.add(placa);
             }
         }
-        if (!pagou && cliente == null){ // significa que é cliente avulso
-            bloqueados.add(placa);
+
+        // --- REMOÇÃO DO VEÍCULO ---
+        String chaveParaRemover = null;
+        for (String p : veiculosEstacionados.keySet()) {
+            if (p.equals(placa)) {
+                chaveParaRemover = p;
+                break;
+            }
         }
+        
+        if (chaveParaRemover != null) {
+            veiculosEstacionados.remove(chaveParaRemover);
+        }
+
+        return true;
     }
 
     //----------------------------- METODOS DE VERIFICACAO DE ESTADO -----------------------------    
@@ -98,15 +133,14 @@ public class Estacionamento {
 
     // verifica se uma placa esta bloqueada
     public boolean estaBloqueado(String placa){
-        return bloqueados.contains(placa);
+        return placasBloqueadas.contains(placa);
     }
 
     //----------------------------- METODOS DE BUSCA COM RETORNO OU USO DE REFERENCIA -----------------------------
 
-    // retorna uma referencia a um cliente pre registrado a partir de uma placa
     private Cliente procuraClientePlaca(String placa){
         return veiculosEstacionados.entrySet().stream()
-            .filter(e -> e.getKey().equals(placa))
+            .filter(e -> e.getKey().equals(placa)) 
             .map(e -> e.getValue())
             .findFirst()
             .orElse(null);
@@ -134,6 +168,20 @@ public class Estacionamento {
         return registros.stream()
             .filter(t -> t.getPlaca().equals(placa))
             .toList();
+    }
+
+    //----------------------------- METODOS AUXILIARES DE DESCONTO -----------------------------
+
+    private boolean verificarClienteFrequente(String placa, LocalDateTime dataSaidaAtual) {
+        LocalDateTime tresDiasAtras = dataSaidaAtual.minusDays(3);
+        
+        return registros.stream()
+            // Filtra os tickets dessa mesma placa (lembrando que para avulso, o ID é a placa)
+            .filter(t -> t.getIdCliente().equals(placa))
+            // Filtra apenas tickets já finalizados (que possuem hora de saída)
+            .filter(t -> t.getHSaida() != null)
+            // Verifica se alguma dessas saídas ocorreu entre 3 dias atrás e a data atual
+            .anyMatch(t -> t.getHSaida().isAfter(tresDiasAtras) && t.getHSaida().isBefore(dataSaidaAtual));
     }
 
 }
