@@ -12,13 +12,11 @@ public class Bloqueio {
     public static boolean verificarBloqueio(Cliente cliente) {
         if (cliente == null) return false;
         
-        if (cliente instanceof ClienteAluno) {
-            ClienteAluno aluno = (ClienteAluno) cliente;
+        if (cliente instanceof ClienteAluno aluno) {
             // Se o saldo for negativo, o aluno é bloqueado
             return aluno.getSaldo() < 0; 
         } 
-        else if (cliente instanceof ClienteEmpresa) {
-            ClienteEmpresa empresa = (ClienteEmpresa) cliente;
+        else if (cliente instanceof ClienteEmpresa empresa) {
             // Bloqueia caso a empresa esteja marcada em débito
             return empresa.estaEmDebito();
         }
